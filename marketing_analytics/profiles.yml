@@ -17,7 +17,7 @@ marketing_analytics:
   outputs:
     dev: &dev_service_account
       <<: *base
-      host: dbc-d701793b-8219.cloud.databricks.com
+      host: "{{ env_var('DATABRICKS_HOST') }}"
       token: "{{ env_var('DATABRICKS_PAT_TOKEN') }}"
       catalog: "{{ env_var('DEV_CATALOG') }}"
       schema: "{{ env_var('DEV_SCHEMA') }}"
@@ -25,22 +25,22 @@ marketing_analytics:
 
     ci: &ci_service_account
       <<: *base_auth
-      catalog: ci_development
-      schema: "{{ env_var('DEV_SCHEMA') }}"
-      host: dbc-d701793b-8219.cloud.databricks.com
+      catalog: "{{ env_var('CI_CATALOG') }}"
+      schema: "{{ env_var('CI_SCHEMA') }}"
+      host: "{{ env_var('DATABRICKS_HOST') }}"
       http_path: "{{ env_var('DEV_HTTP_PATH') }}"
 
     staging: &staging_service_account
       <<: *ci_service_account
-      catalog: gold_staging
-      schema: analytics
+      catalog: "{{ env_var('STAGING_CATALOG') }}"
+      schema: "{{ env_var('STAGING_SCHEMA') }}"
       http_path: "{{ env_var('DEV_HTTP_PATH') }}"
 
     production: &production_service_account
       <<: *base_auth
-      catalog: gold_production
-      schema: analytics
-      host: dbc-d701793b-8219.cloud.databricks.com
+      catalog: "{{ env_var('PROD_CATALOG') }}"
+      schema: "{{ env_var('PROD_SCHEMA') }}"
+      host: "{{ env_var('DATABRICKS_HOST') }}"
       http_path: "{{ env_var('DEV_HTTP_PATH') }}"
 
       
@@ -50,6 +50,7 @@ marketing_analytics:
 ## Check where 'elementary_test_results' is to find it.        ##
 
 elementary:
+  target: staging
   outputs:
     production:
       <<: *production_service_account

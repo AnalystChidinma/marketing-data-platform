@@ -1,0 +1,25 @@
+# Python environment
+.venv/
+__pycache__/
+*.pyc
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# dbt generated artifacts
+**/target/
+**/target_prod/
+**/dbt_packages/
+**/logs/
+**/.user.yml
+
+# Elementary generated artifacts
+**/edr_target/
+
+# IDE and operating system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

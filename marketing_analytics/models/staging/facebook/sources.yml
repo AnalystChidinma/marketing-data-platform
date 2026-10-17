@@ -1,0 +1,49 @@
+sources:
+  - name: facebook_ads
+    database: "{{ 'bronze_production' if target.name == 'production' else 'bronze_dev' }}"
+    description: data from  facebook plaform (static)
+    schema: marketing_raw
+    config:
+      enabled: true
+      meta:
+        owner: "@cde_engineer"
+      freshness:
+        warn_after:
+          count: 2
+          period: day
+
+    tables:
+      - name: ads_stats
+        description: ads stats on spend, clicks and impression data from  facebook plaform (static)
+        identifier: facebook_ads_stats
+        config:
+          enabled: true
+          event_time: ads_date
+
+      - name: new_account_de_randomized
+        description: new account data from  facebook plaform (static)
+        identifier: facebook_new_acccount
+        config:
+          enabled: true
+          event_time: account_updated_at
+
+      - name: new_ads_de_randomized
+        description: facebook_ads data from  facebook plaform (static)
+        identifier: facebook_new_ads
+        config:
+          enabled: true
+          event_time: ad_updated_at
+
+      - name: new_adgroup_de_randomized
+        description: facebook adgroup data from  facebook plaform (static)
+        identifier: facebook_new_adgroup
+        config:
+          enabled: true
+          event_time: ad_group_updated_at
+
+      - name: new_campaign_de_randomized
+        description: facebook campaign data from  facebook plaform (static)
+        identifier: facebook_new_campaign
+        config:
+          enabled: true
+          event_time: campaign_updated_at
