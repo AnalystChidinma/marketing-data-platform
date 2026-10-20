@@ -1,0 +1,47 @@
+
+name: Setup uv
+description: Set up Python, uv, and project dependencies
+
+inputs:
+  python-version:
+    description: Python version for the project
+    required: false
+    default: '3.12'
+
+  uv-version:
+    description: Version of uv to install
+    required: false
+    default: '0.8.13'
+
+  working-directory:
+    description: Directory containing pyproject.toml and uv.lock
+    required: false
+    default: '.'
+
+  uv-sync-extra-args:
+    description: Additional arguments for uv sync
+    required: false
+    default: ''
+
+runs:
+  using: composite
+
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v6
+      with:
+        version: ${{ inputs.uv-version }}
+        enable-cache: true
+
+    - name: Install dependencies
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        UV_SYNC_EXTRA_ARGS: ${{ inputs.uv-sync-extra-args }}
+      run: |
+        uv sync --frozen $UV_SYNC_EXTRA_ARGS

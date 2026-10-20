@@ -1,0 +1,80 @@
+
+name: dbt (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      dbt-target:
+        description: dbt target (ci, staging, production)
+        required: true
+        type: string
+
+      full-run:
+        description: Build the entire dbt project
+        required: false
+        type: boolean
+        default: false
+
+      dbt-args:
+        description: Additional dbt build arguments
+        required: false
+        type: string
+        default: ''
+
+    secrets:
+      DBX_ID_APPLICATION_ID:
+        required: true
+      DBX_SECRET:
+        required: true
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  GITHUB_USERNAME: ${{ github.actor }}
+
+jobs:
+  build-databricks:
+    name: dbt - ${{ inputs.dbt-target }}
+    runs-on: ubuntu-latest
+
+    env:
+      DBT_TARGET: ${{ inputs.dbt-target }}
+
+      # Service principal authentication
+      DBX_ID_APPLICATION_ID: ${{ secrets.DBX_ID_APPLICATION_ID }}
+      DBX_SECRET: ${{ secrets.DBX_SECRET }}
+
+      # Databricks SQL Warehouse
+      DEV_HTTP_PATH: ${{ vars.DEV_HTTP_PATH }}
+
+      # CI environment
+      CI_CATALOG: ${{ vars.CI_CATALOG }}
+      CI_SCHEMA: marketing_analytics
+
+      # Staging environment
+      STAGING_CATALOG: ${{ vars.STAGING_CATALOG }}
+      STAGING_SCHEMA: ${{ vars.STAGING_SCHEMA }}
+
+      # Production environment
+      PROD_CATALOG: ${{ vars.PROD_CATALOG }}
+      PROD_SCHEMA: ${{ vars.PROD_SCHEMA }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Activate uv
+        uses: ./.github/actions/setup_uv
+        with:
+          python-version: '3.12'
+          working-directory: '.'
+
+      - name: Execute dbt CI/CD
+        uses: ./.github/actions/dbt_ci_cd
+        with:
+          project-dir: marketing_analytics
+          github-token: ${{ github.token }}
+          full-run: ${{ inputs.full-run }}
+          dbt-args: ${{ inputs.dbt-args }}
