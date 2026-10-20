@@ -1,36 +1,72 @@
+
 name: Marketing dbt CI/CD
 description: Reusable Databricks dbt validation and build steps
 
 inputs:
   project-dir:
-    description: Path to the dbt project, relative to the repository root
+    description: Path to the dbt project,  relative to the repository root
     required: true
+
   github-token:
-    description: GitHub token for reading previously uploaded production artifacts
+    description: GitHub token for reading production artifacts
     required: true
+
   manifest-artifact-name:
     description: Artifact name containing the production manifest
     required: false
     default: dbt-prod-manifest
+
   full-run:
-    description: Run the entire model project instead of selecting modified models
+    description: Build the entire project
     required: false
     default: 'false'
 
+  dbt-args:
+    description: Additional arguments for a full dbt build
+    required: false
+    default: ''
+
 runs:
   using: composite
+
   steps:
+    - name: Generate pull request CI schema
+      if: env.DBT_TARGET == 'ci'
+      uses: ./.github/actions/export_dev_schema
+
     - name: Validate target and CI isolation
       shell: bash
       run: |
         set -euo pipefail
+
         case "${DBT_TARGET:-}" in
           ci)
-            [[ "${CI_CATALOG:-}" == 'ci_development' ]] || { echo '::error::CI_CATALOG must be ci_development'; exit 1; }
-            [[ "${CI_SCHEMA:-}" =~ ^pr_[0-9]+$ ]] || { echo '::error::CI_SCHEMA must be pr_<PR number>'; exit 1; }
+            [[ "${CI_CATALOG:-}" == "ci_development" ]] || {
+              echo "::error::Invalid CI catalog"
+              exit 1
+            }
+
+            [[ "${CI_SCHEMA:-}" =~ ^pr_[0-9]+$ ]] || {
+              echo "::error::Invalid CI schema"
+              exit 1
+            }
+
+            expected="pr_${{ github.event.pull_request.number }}"
+
+            [[ "$CI_SCHEMA" == "$expected" ]] || {
+              echo "::error::CI schema does not match PR"
+              exit 1
+            }
             ;;
-          staging|production) ;;
-          *) echo '::error::DBT_TARGET must be ci, staging, or production'; exit 1 ;;
+
+          staging|production)
+            echo "Running dbt target: $DBT_TARGET"
+            ;;
+
+          *)
+            echo "::error::Invalid DBT_TARGET"
+            exit 1
+            ;;
         esac
 
     - name: Download production manifest when available
@@ -42,20 +78,35 @@ runs:
         MANIFEST_NAME: ${{ inputs.manifest-artifact-name }}
       run: |
         set -euo pipefail
+
         mkdir -p target_prod
-        # Artifact listing is newest first. Ignore artifacts not from main or already expired.
-        artifact_id=$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts?name=${MANIFEST_NAME}&per_page=100" \
-          --jq '[.artifacts[] | select(.expired == false and .workflow_run.head_branch == "main")][0].id // empty')
-        if [[ -n "$artifact_id" ]]; then
-          gh api -H 'Accept: application/vnd.github+json' \
-            "repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}/zip" > /tmp/dbt-prod-manifest.zip
-          unzip -o -q /tmp/dbt-prod-manifest.zip -d target_prod
-        fi
-        if [[ -s target_prod/manifest.json ]]; then
-          echo 'has_state=true' >> "$GITHUB_OUTPUT"
+
+        RUN_ID=$(gh api \
+          "repos/${GITHUB_REPOSITORY}/actions/artifacts?name=${MANIFEST_NAME}&per_page=100" \
+          --jq '[.artifacts[]
+            | select(
+                .expired == false
+                and .workflow_run.head_branch == "main"
+              )
+            ][0].workflow_run.id // empty')
+
+        if [[ -n "$RUN_ID" ]]; then
+          echo "Production manifest found in run: $RUN_ID"
+
+          gh run download "$RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$MANIFEST_NAME" \
+            --dir target_prod
         else
-          echo '::notice::No usable production manifest; use a full build for this run.'
-          echo 'has_state=false' >> "$GITHUB_OUTPUT"
+          echo "::notice::No production manifest exists yet."
+        fi
+
+        if [[ -s target_prod/manifest.json ]]; then
+          echo "has_state=true" >> "$GITHUB_OUTPUT"
+          echo "Production state comparison enabled."
+        else
+          echo "has_state=false" >> "$GITHUB_OUTPUT"
+          echo "Full-build fallback enabled."
         fi
 
     - name: Install dbt dependencies and validate connection
@@ -63,9 +114,17 @@ runs:
       working-directory: ${{ inputs.project-dir }}
       run: |
         set -euo pipefail
+
         uv run dbt deps --profiles-dir .
-        uv run dbt debug --profiles-dir . --target "$DBT_TARGET"
-        uv run dbt parse --profiles-dir . --target "$DBT_TARGET" --no-partial-parse
+
+        uv run dbt debug \
+          --profiles-dir . \
+          --target "$DBT_TARGET"
+
+        uv run dbt parse \
+          --profiles-dir . \
+          --target "$DBT_TARGET" \
+          --no-partial-parse
 
     - name: Build marketing project
       shell: bash
@@ -73,30 +132,82 @@ runs:
       env:
         HAS_PROD_STATE: ${{ steps.prod-state.outputs.has_state }}
         FULL_RUN: ${{ inputs.full-run }}
+        DBT_ARGS: ${{ inputs.dbt-args }}
       run: |
         set -euo pipefail
-        # Currently this project has source YAML but no SQL models. Don't run package-only models.
-        model_count=$(uv run dbt ls --resource-type model --select package:marketing_analytics \
-          --profiles-dir . --target "$DBT_TARGET" --output name --log-level error | sed '/^$/d' | wc -l)
+
+        model_count=$(uv run dbt ls \
+          --resource-type model \
+          --select package:marketing_analytics \
+          --profiles-dir . \
+          --target "$DBT_TARGET" \
+          --output name \
+          --log-level error | sed '/^$/d' | wc -l)
+
         if [[ "$model_count" -eq 0 ]]; then
-          echo '::notice::No marketing SQL models yet; CI connection and parsing were validated.'
+          echo "::notice::No marketing SQL models yet."
+          echo "Connection and parsing checks passed."
           exit 0
         fi
-        if [[ "$FULL_RUN" == 'true' || "$HAS_PROD_STATE" != 'true' ]]; then
-          uv run dbt build --profiles-dir . --target "$DBT_TARGET" --select package:marketing_analytics --fail-fast
+
+        if [[ "$FULL_RUN" == "true" ]]; then
+          echo "Running full dbt build."
+
+          extra_args=()
+          if [[ -n "$DBT_ARGS" ]]; then
+            read -r -a extra_args <<< "$DBT_ARGS"
+          fi
+
+          uv run dbt build \
+            --profiles-dir . \
+            --target "$DBT_TARGET" \
+            --select package:marketing_analytics \
+            --fail-fast \
+            "${extra_args[@]}"
+
+        elif [[ "$HAS_PROD_STATE" != "true" ]]; then
+          echo "No production state. Building all marketing models."
+
+          uv run dbt build \
+            --profiles-dir . \
+            --target "$DBT_TARGET" \
+            --select package:marketing_analytics \
+            --fail-fast
+
+         elif [[ "$DBT_TARGET" == "ci" ]]; then
+          echo "Running CI state-based build."
+
+          uv run dbt build \
+            --profiles-dir . \
+            --target "$DBT_TARGET" \
+            --select 'package:marketing_analytics,state:modified+1' \
+            --state target_prod \
+            --defer \
+            --indirect-selection buildable \
+            --fail-fast
+
         else
-          uv run dbt build --profiles-dir . --target "$DBT_TARGET" \
-            --select 'state:modified+1' --state target_prod --defer \
-            --indirect-selection buildable --fail-fast
+          echo "Running deployment state-based build."
+
+          uv run dbt build \
+            --profiles-dir . \
+            --target "$DBT_TARGET" \
+            --select 'package:marketing_analytics,state:modified+' \
+            --state target_prod \
+            --fail-fast
         fi
 
-    - name: Generate production or staging dbt documentation
+    - name: Generate staging or production dbt documentation
       if: env.DBT_TARGET == 'staging' || env.DBT_TARGET == 'production'
       shell: bash
       working-directory: ${{ inputs.project-dir }}
       run: |
         set -euo pipefail
-        uv run dbt docs generate --profiles-dir . --target "$DBT_TARGET" --static
+
+        uv run dbt docs generate \
+          --profiles-dir . \
+          --target "$DBT_TARGET" \
+          --static
 
     - name: Upload production manifest
       if: env.DBT_TARGET == 'production'
@@ -107,7 +218,7 @@ runs:
         retention-days: 90
         if-no-files-found: error
 
-    - name: Upload documentation
+    - name: Upload dbt documentation
       if: env.DBT_TARGET == 'staging' || env.DBT_TARGET == 'production'
       uses: actions/upload-artifact@v4
       with:

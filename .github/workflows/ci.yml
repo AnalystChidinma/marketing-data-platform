@@ -1,0 +1,51 @@
+
+name: Continuous Integration
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: SQL linting
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Activate uv
+        uses: ./.github/actions/setup_uv
+        with:
+          python-version: '3.12'
+          working-directory: '.'
+
+      - name: Check SQL linting
+        run: |
+          uv run sqlfluff lint marketing_analytics/models \
+            --dialect databricks \
+            --templater jinja
+
+  build:
+    name: dbt CI build
+    needs: lint
+    uses: ./.github/workflows/_dbt.yml
+    secrets: inherit
+    with:
+      dbt-target: ci
+      full-run: false

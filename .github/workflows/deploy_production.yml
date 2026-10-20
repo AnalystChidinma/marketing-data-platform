@@ -1,0 +1,39 @@
+
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+
+  schedule:
+    - cron: '0 10 * * *'
+
+  workflow_dispatch:
+    inputs:
+      dbt-args:
+        description: Additional dbt build arguments
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy marketing dbt project to production
+
+    uses: ./.github/workflows/_dbt.yml
+
+    secrets: inherit
+
+    with:
+      dbt-target: production
+      full-run: ${{ github.event_name != 'push' }}
+      dbt-args: ${{ inputs.dbt-args || '' }}
