@@ -1,0 +1,50 @@
+
+name: Upload Elementary Report
+description: Generate and upload an Elementary observability report
+
+inputs:
+  project-dir:
+    description: Directory containing the dbt project
+    required: true
+
+  profile-target:
+    description: Elementary profile target (staging or production)
+    required: true
+
+  elementary-env:
+    description: Environment label used in the Elementary report
+    required: false
+    default: prod
+
+  retention-days:
+    description: Number of days to retain the report
+    required: false
+    default: '90'
+
+runs:
+  using: composite
+
+  steps:
+    - name: Generate Elementary report
+      shell: bash
+      working-directory: ${{ inputs.project-dir }}
+      env:
+        ELEMENTARY_PROFILE_TARGET: ${{ inputs.profile-target }}
+        ELEMENTARY_ENV: ${{ inputs.elementary-env }}
+      run: |
+        set -euo pipefail
+
+        uv run edr report \
+          --days-back 90 \
+          --profiles-dir . \
+          --profile-target "$ELEMENTARY_PROFILE_TARGET" \
+          --open-browser false \
+          --env "$ELEMENTARY_ENV"
+
+    - name: Upload Elementary report
+      uses: actions/upload-artifact@v4
+      with:
+        name: elementary-report-${{ inputs.profile-target }}
+        path: ${{ inputs.project-dir }}/edr_target/elementary_report.html
+        retention-days: ${{ inputs.retention-days }}
+        if-no-files-found: error

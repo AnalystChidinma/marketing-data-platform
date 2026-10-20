@@ -1,0 +1,20 @@
+
+name: Export CI schema
+description: Generate an isolated Databricks schema for each pull request
+
+runs:
+  using: composite
+  steps:
+    - name: Generate CI schema
+      if: github.event_name == 'pull_request'
+      shell: bash
+      env:
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+      run: |
+        set -euo pipefail
+
+        CI_SCHEMA="pr_${PR_NUMBER}"
+
+        echo "CI_SCHEMA=$CI_SCHEMA" >> "$GITHUB_ENV"
+
+        echo "CI schema: $CI_SCHEMA"
