@@ -1,0 +1,88 @@
+
+name: Clean up on PR closed
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - closed
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  clean-up-ci-schema-databricks:
+    name: Delete closed PR CI schema
+
+    if: github.event.pull_request.head.repo.full_name == github.repository
+
+    runs-on: ubuntu-latest
+
+    env:
+      DBT_TARGET: ci
+
+      DBX_ID_APPLICATION_ID: ${{ secrets.DBX_ID_APPLICATION_ID }}
+      DBX_SECRET: ${{ secrets.DBX_SECRET }}
+
+      DEV_HTTP_PATH: ${{ vars.DEV_HTTP_PATH }}
+      CI_CATALOG: ${{ vars.CI_CATALOG }}
+
+    steps:
+      - name: Checkout trusted main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Activate uv
+        uses: ./.github/actions/setup_uv
+        with:
+          python-version: '3.12'
+          working-directory: '.'
+
+      - name: Export CI schema
+        uses: ./.github/actions/export_dev_schema
+
+      - name: Validate schema before cleanup
+        shell: bash
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          expected="pr_${PR_NUMBER}"
+
+          [[ "$CI_CATALOG" == "ci_development" ]] || exit 1
+          [[ "$CI_SCHEMA" == "$expected" ]] || exit 1
+          [[ "$CI_SCHEMA" =~ ^pr_[0-9]+$ ]] || exit 1
+
+          echo "CI cleanup target: ${CI_CATALOG}.${CI_SCHEMA}"
+
+      - name: Install dbt dependencies
+        shell: bash
+        working-directory: marketing_analytics
+        run: |
+          set -euo pipefail
+
+          uv run dbt deps --profiles-dir .
+
+          uv run dbt debug \
+            --profiles-dir . \
+            --target ci
+
+      - name: Delete PR-specific CI schema
+        shell: bash
+        working-directory: marketing_analytics
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          uv run dbt run-operation drop_schemas \
+            --profiles-dir . \
+            --target ci \
+            --args "{pr_number: ${PR_NUMBER}, dry_run: false}"

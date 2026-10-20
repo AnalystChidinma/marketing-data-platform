@@ -42,16 +42,16 @@ jobs:
     env:
       DBT_TARGET: ${{ inputs.dbt-target }}
 
-      # Service principal authentication
+      # Databricks service principal
       DBX_ID_APPLICATION_ID: ${{ secrets.DBX_ID_APPLICATION_ID }}
       DBX_SECRET: ${{ secrets.DBX_SECRET }}
 
-      # Databricks SQL Warehouse
+      # Databricks workspace and SQL warehouse
+      DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
       DEV_HTTP_PATH: ${{ vars.DEV_HTTP_PATH }}
 
       # CI environment
       CI_CATALOG: ${{ vars.CI_CATALOG }}
-      CI_SCHEMA: marketing_analytics
 
       # Staging environment
       STAGING_CATALOG: ${{ vars.STAGING_CATALOG }}

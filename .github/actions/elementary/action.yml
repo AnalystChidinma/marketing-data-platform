@@ -34,12 +34,15 @@ runs:
       run: |
         set -euo pipefail
 
+        mkdir -p edr_target
+
         uv run edr report \
           --days-back 90 \
           --profiles-dir . \
           --profile-target "$ELEMENTARY_PROFILE_TARGET" \
           --open-browser false \
-          --env "$ELEMENTARY_ENV"
+          --env "$ELEMENTARY_ENV" \
+          --file-path edr_target/elementary_report.html
 
     - name: Upload Elementary report
       uses: actions/upload-artifact@v4
