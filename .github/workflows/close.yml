@@ -29,6 +29,7 @@ jobs:
       DBX_ID_APPLICATION_ID: ${{ secrets.DBX_ID_APPLICATION_ID }}
       DBX_SECRET: ${{ secrets.DBX_SECRET }}
 
+      DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
       DEV_HTTP_PATH: ${{ vars.DEV_HTTP_PATH }}
       CI_CATALOG: ${{ vars.CI_CATALOG }}
 
@@ -85,4 +86,4 @@ jobs:
           uv run dbt run-operation drop_schemas \
             --profiles-dir . \
             --target ci \
-            --args "{pr_number: ${PR_NUMBER}, dry_run: false}"
+            --args "{pr_number: ${PR_NUMBER}, dry_run: true}"

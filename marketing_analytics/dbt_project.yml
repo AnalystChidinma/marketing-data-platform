@@ -35,25 +35,25 @@ models:
 
     staging:
       +materialized: view
-      +catalog: "{{ 'silver_production' if target.name == 'production' else 'silver_staging' if target.name == 'staging' else target.catalog }}"
+      +catalog: "{{ 'silver_production' if env_var('DBT_TARGET', 'dev') == 'production' else 'silver_staging' if env_var('DBT_TARGET', 'dev') == 'staging' else env_var('CI_CATALOG', 'ci_development') if env_var('DBT_TARGET', 'dev') == 'ci' else env_var('DEV_CATALOG', 'bronze_dev') }}"
       +schema: staging
 
     # Harmonize data across advertising platforms
     intermediate:
       +materialized: view
-      +catalog: "{{ 'silver_production' if target.name == 'production' else 'silver_staging' if target.name == 'staging' else target.catalog }}"
+      +catalog: "{{ 'silver_production' if env_var('DBT_TARGET', 'dev') == 'production' else 'silver_staging' if env_var('DBT_TARGET', 'dev') == 'staging' else env_var('CI_CATALOG', 'ci_development') if env_var('DBT_TARGET', 'dev') == 'ci' else env_var('DEV_CATALOG', 'bronze_dev') }}"
       +schema: intermediate
 
     # Business-ready analytical models
     marts:
       +materialized: table
-      +catalog: "{{ 'gold_production' if target.name == 'production' else 'silver_staging' if target.name == 'staging' else target.catalog }}"
+      +catalog:  "{{ 'gold_production' if env_var('DBT_TARGET', 'dev') == 'production' else 'silver_staging' if env_var('DBT_TARGET', 'dev') == 'staging' else env_var('CI_CATALOG', 'ci_development') if env_var('DBT_TARGET', 'dev') == 'ci' else env_var('DEV_CATALOG', 'bronze_dev') }}"
       +schema: marketing_analytics
 
   # Elementary observability
   elementary:
     +meta:
       owner: "external_package"
-    +catalog: "{{ 'silver_production' if target.name == 'production' else 'silver_staging' if target.name == 'staging' else target.catalog }}"
+    +catalog: "{{ 'silver_production' if env_var('DBT_TARGET', 'dev') == 'production' else 'silver_staging' if env_var('DBT_TARGET', 'dev') == 'staging' else env_var('CI_CATALOG', 'ci_development') if env_var('DBT_TARGET', 'dev') == 'ci' else env_var('DEV_CATALOG', 'bronze_dev') }}"
     +schema: elementary
-    +enabled: "{{ target.name in ['staging', 'production'] }}"
+    +enabled: "{{ env_var('DBT_TARGET', 'dev') in ['staging', 'production'] }}"
