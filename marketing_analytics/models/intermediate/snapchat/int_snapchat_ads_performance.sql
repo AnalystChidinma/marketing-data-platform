@@ -74,15 +74,15 @@ joined as (
         p.impressions,
         p.clicks
 
-    from ads_performance p
+    from ads_performance as p
 
-    left join ads a
+    left join ads as a
         on p.ad_id = a.ad_id
 
-    left join adgroups g
+    left join adgroups as g
         on a.ad_group_id = g.ad_group_id
 
-    left join campaigns c
+    left join campaigns as c
         on g.campaign_id = c.campaign_id
 
 )

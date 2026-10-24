@@ -1,4 +1,3 @@
-
 {{ config(materialized='view') }}
 
 with source as (
@@ -20,10 +19,10 @@ renamed as (
 
         cast(campaign_id as string) as campaign_id,
 
-        nullif(trim(ad_group_name), '') as ad_group_name,
-
         cast(ad_group_updated_at as timestamp)
-            as ad_group_updated_at
+            as ad_group_updated_at,
+
+        nullif(trim(ad_group_name), '') as ad_group_name
 
     from source
 

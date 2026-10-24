@@ -1,4 +1,3 @@
-
 {{ config(materialized='table') }}
 
 with facebook as (
@@ -84,17 +83,15 @@ aggregated as (
         sum(impressions) as known_impressions,
 
         -- Completeness indicators
-        case
-            when count_if(clicks is null) = 0
-                then true
-            else false
-        end as clicks_complete,
+        coalesce(
+            count_if(clicks is null) = 0,
+            false
+        ) as clicks_complete,
 
-        case
-            when count_if(impressions is null) = 0
-                then true
-            else false
-        end as impressions_complete
+        coalesce(
+            count_if(impressions is null) = 0,
+            false
+        ) as impressions_complete
 
     from unified
 

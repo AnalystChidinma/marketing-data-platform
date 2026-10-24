@@ -1,4 +1,3 @@
-
 {{ config(materialized='view') }}
 
 with ads_performance as (
@@ -68,16 +67,17 @@ joined as (
         p.impressions,
         p.clicks
 
-    from ads_performance p
+    from ads_performance as p
 
-    left join ads a
-        on p.ad_id = a.ad_id
-        and p.account_id = a.account_id
+    left join ads as a
+        on
+            p.ad_id = a.ad_id
+            and p.account_id = a.account_id
 
-    left join campaigns c
+    left join campaigns as c
         on a.campaign_id = c.campaign_id
 
-    left join accounts acc
+    left join accounts as acc
         on p.account_id = acc.account_id
 
 )

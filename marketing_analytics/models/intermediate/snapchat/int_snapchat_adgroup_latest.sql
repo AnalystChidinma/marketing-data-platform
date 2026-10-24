@@ -1,4 +1,3 @@
-
 {{ config(materialized='view') }}
 
 with adgroup_history as (
