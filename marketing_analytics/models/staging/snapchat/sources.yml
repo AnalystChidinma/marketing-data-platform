@@ -17,7 +17,7 @@ sources:
         description: ads stats on spend, clicks and impression data from  snapchat plaform (static)
         config:
           enabled: true
-          event_time: ads_date
+          event_time: ad_date
 
       - name: snapchat_ads_ad_history_new_ad_names
         description: snapchat ads history data from  snapchat plaform (static)

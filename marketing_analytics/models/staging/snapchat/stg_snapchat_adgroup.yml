@@ -1,0 +1,34 @@
+
+version: 2
+
+models:
+  - name: stg_snapchat_adgroup
+    description: >
+      Standardized Snapchat ad group metadata.
+      Historical source records are preserved.
+      Multiple versions may exist for one ad_group_id.
+
+    columns:
+      - name: source_surrogate_key
+        description: Unique source record identifier.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: ad_group_id
+        description: Snapchat ad group identifier.
+        data_tests:
+          - not_null
+
+      - name: campaign_id
+        description: Campaign associated with the ad group.
+        data_tests:
+          - not_null
+
+      - name: ad_group_name
+        description: Advertisement group name.
+
+      - name: ad_group_updated_at
+        description: Source metadata update timestamp.
+        data_tests:
+          - not_null

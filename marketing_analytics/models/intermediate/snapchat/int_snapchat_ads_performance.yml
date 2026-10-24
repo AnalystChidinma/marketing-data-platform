@@ -1,0 +1,82 @@
+version: 2
+
+models:
+  - name: int_snapchat_ads_performance
+    description: >
+      Snapchat advertising performance enriched with
+      advertisement, ad group and campaign metadata.
+      Grain: one advertisement per reporting date
+      per country. Latest available ad group metadata
+      is used for current-state campaign attribution.
+      Missing click values remain NULL.
+
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - ad_id
+              - ad_date
+              - country_code
+
+    columns:
+      - name: ad_id
+        description: Snapchat advertisement identifier.
+        data_tests:
+          - not_null
+
+      - name: ad_date
+        description: Advertising performance date.
+        data_tests:
+          - not_null
+
+      - name: country_code
+        description: Country of reported performance.
+        data_tests:
+          - not_null
+
+      - name: platform
+        description: Advertising platform.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['snapchat']
+
+      - name: campaign_id
+        description: Campaign associated with the advertisement.
+        data_tests:
+          - not_null
+
+      - name: campaign_name
+        description: Name of the associated Snapchat campaign.
+
+      - name: account_id
+        description: Snapchat advertising account identifier.
+
+      - name: currency_code
+        description: Currency associated with advertising spend.
+        data_tests:
+          - not_null
+
+      - name: spend
+        description: Advertising expenditure in source currency.
+
+      - name: impressions
+        description: Number of advertising impressions.
+
+      - name: clicks
+        description: >
+          Number of advertising clicks.
+          NULL means missing source data.
+
+      - name: ad_group_id
+        description: Snapchat advertisement group identifier.
+
+      - name: ad_name
+        description: Snapchat advertisement name.
+
+      - name: ad_group_name
+        description: Latest available advertisement group name.
+
+      - name: source_name
+        description: Original advertising data source.

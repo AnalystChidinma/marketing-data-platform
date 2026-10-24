@@ -1,0 +1,19 @@
+version: 2
+
+models:
+  - name: stg_facebook_campaign
+    description: >
+      Standardized Facebook campaign metadata.
+      One row represents one Facebook campaign.
+
+    columns:
+      - name: campaign_id
+        data_tests:
+          - not_null
+          - unique
+
+      - name: campaign_name
+        description: Facebook campaign name.
+
+      - name: campaign_updated_at
+        description: Last recorded campaign update timestamp.

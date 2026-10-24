@@ -1,0 +1,101 @@
+version: 2
+
+models:
+  - name: fct_marketing_performance
+    description: >
+      Unified Facebook and Snapchat daily marketing
+      performance aggregated at platform, account,
+      campaign, date and currency grain.
+      Monetary values remain in their source currencies.
+      Missing clicks or impressions produce NULL totals
+      for affected groups rather than incomplete totals.
+
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - performance_date
+              - platform
+              - account_id
+              - campaign_id
+              - currency_code
+
+    columns:
+      - name: performance_date
+        data_tests:
+          - not_null
+
+      - name: platform
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['facebook', 'snapchat']
+
+      - name: account_id
+        data_tests:
+          - not_null
+
+      - name: campaign_id
+        data_tests:
+          - not_null
+
+      - name: currency_code
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['EUR', 'USD']
+
+      - name: spend
+        description: >
+          Advertising spend in the specified currency.
+        data_tests:
+          - not_null
+
+      - name: impressions
+        description: >
+          Total impressions, NULL if any underlying
+          record has missing impressions.
+
+      - name: clicks
+        description: >
+          Total clicks, NULL if any underlying
+          record has missing clicks.
+
+      - name: ctr
+        description: Click-through rate as a percentage.
+
+      - name: cpc
+        description: Cost per click in the source currency.
+
+      - name: cpm
+        description: Cost per thousand impressions.
+
+      - name: missing_click_rows
+        description: Number of source rows with missing clicks.
+
+      - name: missing_impression_rows
+        description: Number of source rows with missing impressions.
+
+      - name: known_clicks
+        description: >
+          Sum of available click values.
+          May be incomplete when some source rows
+          have missing clicks.
+
+      - name: known_impressions
+        description: >
+          Sum of available impression values.
+          May be incomplete when source rows
+          have missing impressions.
+
+      - name: clicks_complete
+        description: >
+          TRUE when every contributing source
+          record has a valid click value.
+
+      - name: impressions_complete
+        description: >
+          TRUE when every contributing source
+          record has a valid impression value.

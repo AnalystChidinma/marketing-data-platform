@@ -1,0 +1,22 @@
+version: 2
+
+models:
+  - name: stg_snapchat_campaign
+    description: >
+      Standardized Snapchat campaign metadata.
+      Grain: one row per campaign.
+      Provides campaign names and account identifiers
+      for downstream marketing performance reporting.
+
+    columns:
+      - name: campaign_id
+        description: Unique Snapchat campaign identifier.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: account_id
+        description: Snapchat advertising account identifier.
+
+      - name: campaign_name
+        description: Snapchat campaign name.
