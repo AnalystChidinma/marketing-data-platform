@@ -1,0 +1,29 @@
+version: 2
+
+models:
+  - name: int_snapchat_adgroup_latest
+    description: >
+      Latest available record for each Snapchat ad group.
+      Historical versions remain in the staging model.
+      This model provides current-state ad group to
+      campaign attribution for downstream reporting.
+
+    columns:
+      - name: ad_group_id
+        description: Unique Snapchat ad group identifier.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: campaign_id
+        description: Campaign associated with the ad group.
+        data_tests:
+          - not_null
+
+      - name: ad_group_name
+        description: Latest available ad group name.
+
+      - name: ad_group_updated_at
+        description: Timestamp of the selected metadata record.
+        data_tests:
+          - not_null

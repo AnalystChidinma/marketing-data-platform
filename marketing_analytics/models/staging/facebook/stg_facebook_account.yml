@@ -1,0 +1,34 @@
+
+version: 2
+
+models:
+  - name: stg_facebook_account
+    description: >
+      Standardized Facebook advertising account metadata.
+      Grain: one row per account_id.
+      Provides account names and currencies for
+      accurate campaign expenditure reporting.
+
+    columns:
+      - name: account_id
+        description: Unique Facebook advertising account.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: account_name
+        description: Facebook advertising account name.
+
+      - name: currency_code
+        description: Currency used by the advertising account.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['EUR', 'USD']
+
+      - name: account_created_at
+        description: Account creation timestamp.
+
+      - name: account_updated_at
+        description: Account last update timestamp.

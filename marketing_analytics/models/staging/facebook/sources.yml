@@ -18,11 +18,11 @@ sources:
         identifier: facebook_ads_stats
         config:
           enabled: true
-          event_time: ads_date
+          event_time: ad_date
 
       - name: new_account_de_randomized
         description: new account data from  facebook plaform (static)
-        identifier: facebook_new_acccount
+        identifier: facebook_new_account
         config:
           enabled: true
           event_time: account_updated_at

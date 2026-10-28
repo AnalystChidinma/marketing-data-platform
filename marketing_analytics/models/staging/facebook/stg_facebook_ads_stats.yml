@@ -1,0 +1,47 @@
+
+version: 2
+
+models:
+  - name: stg_facebook_ads_stats
+    description: >
+      Cleaned Facebook advertising performance data.
+      Each row represents one advertisement on one reporting
+      date. Spend, impressions and clicks are standardized
+      for downstream marketing analysis. Missing impressions
+      and clicks remain NULL rather than being converted to zero.
+
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - ad_id
+              - ad_date
+
+    columns:
+      - name: ad_id
+        description: Facebook advertisement identifier.
+        data_tests:
+          - not_null
+
+      - name: account_id
+        description: Facebook advertising account identifier.
+
+      - name: ad_date
+        description: Date of advertising activity.
+        data_tests:
+          - not_null
+
+      - name: spend
+        description: >
+          Advertising expenditure stored as DECIMAL(18,2).
+          Currency consistency must be verified before aggregation.
+
+      - name: impressions
+        description: >
+          Number of advertising impressions.
+          Missing values are represented as NULL.
+
+      - name: clicks
+        description: >
+          Number of advertising clicks.
+          Missing values are represented as NULL.

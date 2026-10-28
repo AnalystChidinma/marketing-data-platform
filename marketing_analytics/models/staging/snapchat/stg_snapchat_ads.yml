@@ -1,0 +1,32 @@
+
+version: 2
+
+models:
+  - name: stg_snapchat_ads
+    description: >
+      Standardized Snapchat advertisement metadata.
+      Grain: one row per advertisement.
+      Provides advertisement names and ad group
+      relationships for campaign attribution.
+      Represents the available metadata snapshot,
+      not confirmed historical point-in-time state.
+
+    columns:
+      - name: ad_id
+        description: Unique Snapchat advertisement identifier.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: ad_group_id
+        description: Snapchat ad group identifier.
+        data_tests:
+          - not_null
+
+      - name: ad_name
+        description: Snapchat advertisement name.
+
+      - name: ad_updated_at
+        description: Last recorded metadata update timestamp.
+        data_tests:
+          - not_null

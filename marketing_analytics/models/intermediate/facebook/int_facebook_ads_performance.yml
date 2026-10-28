@@ -1,0 +1,78 @@
+
+version: 2
+
+models:
+  - name: int_facebook_ads_performance
+    description: >
+      Facebook daily advertisement performance enriched
+      with advertisement and campaign metadata.
+      Grain: one row per ad_id and ad_date.
+      Missing impressions and clicks remain NULL.
+      This model supports downstream campaign-level
+      reporting and cross-platform marketing analysis.
+
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - ad_id
+              - ad_date
+
+    columns:
+      - name: ad_id
+        description: Unique Facebook advertisement identifier.
+        data_tests:
+          - not_null
+
+      - name: ad_date
+        description: Advertising performance reporting date.
+        data_tests:
+          - not_null
+
+      - name: platform
+        description: Standardized advertising platform name.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['facebook']
+
+      - name: account_id
+        description: Facebook advertising account identifier.
+
+      - name: campaign_id
+        description: Campaign associated with the advertisement.
+        data_tests:
+          - not_null
+
+      - name: campaign_name
+        description: Facebook campaign name.
+
+      - name: ad_group_id
+        description: Facebook advertisement group identifier.
+
+      - name: ad_name
+        description: Facebook advertisement name.
+
+      - name: ad_status
+        description: Advertisement status from the metadata extract.
+
+      - name: spend
+        description: Daily advertisement spending.
+
+      - name: impressions
+        description: Daily impressions; NULL indicates missing data.
+
+      - name: clicks
+        description: Daily clicks; NULL indicates missing data.
+
+      - name: account_name
+        description: Facebook advertising account name.
+
+      - name: currency_code
+        description: Currency associated with advertising spend.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['EUR', 'USD']
