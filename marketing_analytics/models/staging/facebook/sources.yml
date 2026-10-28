@@ -1,6 +1,6 @@
 sources:
   - name: facebook_ads
-    database: "{{ 'bronze_dev' if target.name == 'dev' else 'bronze_production' }}"
+    database: "{{ 'bronze_production' if target.name == 'production' else 'bronze_dev' }}"
     description: data from  facebook plaform (static)
     schema: marketing_raw
     config:
@@ -22,7 +22,7 @@ sources:
 
       - name: new_account_de_randomized
         description: new account data from  facebook plaform (static)
-        identifier: facebook_new_acccount
+        identifier: facebook_new_account
         config:
           enabled: true
           event_time: account_updated_at
